@@ -68,6 +68,12 @@ const transactions = () => {
                         {alert.message}
                     </div>
                 )}
+                <a
+                    href="/transactions"
+                    className="inline-flex items-center px-3 py-1 text-xs font-semibold text-white bg-blue-600 rounded-full hover:bg-blue-700"
+                >
+                    Back
+                </a>
                 <div className="container mx-auto p-4">
                     <h1 className="text-2xl font-bold mb-4">Update Transaction</h1>
                     <form onSubmit={handleSubmit} className="space-y-4">
