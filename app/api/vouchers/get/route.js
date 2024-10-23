@@ -1,5 +1,6 @@
 import prisma from "@utils/connection";
 
+export const dynamic = 'force-dynamic';
 export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const code = searchParams.get('searchCode');

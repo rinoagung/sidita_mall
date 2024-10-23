@@ -1,5 +1,6 @@
 import prisma from "@utils/connection";
 
+export const dynamic = 'force-dynamic';
 export async function GET() {
     const customers = await prisma.customers.findMany({
         select: {
