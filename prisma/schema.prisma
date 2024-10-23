@@ -1,0 +1,50 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model users {
+    id        String   @id @default(uuid())
+    name      String?
+    email     String   @unique
+    password  String
+    role      String?
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model customers {
+    id           String         @id @default(uuid())
+    name         String
+    email        String         @unique
+    createdAt    DateTime       @default(now())
+    updatedAt    DateTime       @updatedAt
+    transactions transactions[]
+    vouchers     vouchers[]
+}
+
+model transactions {
+    id           String    @id @default(uuid())
+    customerId   String
+    totalHarga   Int
+    tukarVoucher Boolean   @default(false)
+    createdAt    DateTime  @default(now())
+    updatedAt    DateTime  @updatedAt
+    customer     customers @relation(fields: [customerId], references: [id])
+}
+
+model vouchers {
+    id         String    @id @default(uuid())
+    code       String    @unique
+    value      Int
+    expiresAt  DateTime
+    used       Boolean   @default(false)
+    customerId String
+    createdAt  DateTime  @default(now())
+    updatedAt  DateTime  @updatedAt
+    customer   customers @relation(fields: [customerId], references: [id])
+}
