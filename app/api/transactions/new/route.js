@@ -1,19 +1,18 @@
 import prisma from "@utils/connection";
 
 export async function POST(request) {
-    const { name, location, description } = await request.json();
+    const { selectedCustomer, totalHarga } = await request.json();
 
 
-    if (!name) {
-        return new Response(JSON.stringify({ error: 'Name is required' }), { status: 400 });
+    if (!selectedCustomer) {
+        return new Response(JSON.stringify({ error: 'Customer is required' }), { status: 400 });
     }
 
     try {
         const newTransaction = await prisma.transactions.create({
             data: {
-                name,
-                location,
-                description,
+                customerId: selectedCustomer,
+                totalHarga: parseInt(totalHarga)
             },
         });
 

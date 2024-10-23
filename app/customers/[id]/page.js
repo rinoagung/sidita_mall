@@ -46,7 +46,6 @@ const customers = () => {
         if (response.ok) {
             showAlert('Data berhasil diupdate!', 'success');
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            console.log('Customer updated:', data);
         } else {
             console.error('Error updating customer:', data);
         }

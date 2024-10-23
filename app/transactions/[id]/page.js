@@ -7,12 +7,15 @@ import Provider from "@components/provider";
 import Nav from "@components/nav";
 
 const transactions = () => {
-    const { alert, showAlert, alertClass } = useAlert();
-
-    const [name, setName] = useState('');
-    const [location, setLocation] = useState('');
-    const [description, setDescription] = useState('');
     const { id } = useParams();
+
+    const { alert, showAlert, alertClass } = useAlert();
+    const [totalHarga, setTotalHarga] = useState('');
+
+    const [selectedCustomer, setSelectedCustomer] = useState('');
+
+    const [customer, setCustomer] = useState([]);
+
 
     useEffect(() => {
         const fetchTransaction = async () => {
@@ -21,9 +24,9 @@ const transactions = () => {
                 const response = await fetch(`/api/transactions/${id}`);
                 if (response.ok) {
                     const data = await response.json();
-                    setName(data.name);
-                    setLocation(data.location);
-                    setDescription(data.description);
+                    setTotalHarga(data.transaction.totalHarga);
+                    setSelectedCustomer(data.transaction.customerId);
+                    setCustomer(data.customers);
                 } else {
                     console.error('Error fetching transaction data:', response.statusText);
                 }
@@ -42,7 +45,7 @@ const transactions = () => {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ id, name, location, description }),
+            body: JSON.stringify({ id, selectedCustomer, totalHarga }),
         });
 
         const data = await response.json();
@@ -69,30 +72,27 @@ const transactions = () => {
                     <h1 className="text-2xl font-bold mb-4">Update Transaction</h1>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-gray-700">Transaction Name</label>
-                            <input
-                                type="text"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                required
+                            <label className="block text-gray-700">Select Customer</label>
+                            <select
+                                value={selectedCustomer}
+                                onChange={(e) => setSelectedCustomer(e.target.value)}
                                 className="border rounded w-full p-2"
-                            />
+                            >
+                                <option value="">-</option>
+                                {customer.map((e) => (
+                                    <option key={e.id} value={e.id}>
+                                        {e.name}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                         <div>
-                            <label className="block text-gray-700">Location</label>
+                            <label className="block text-gray-700">Total Harga Transaksi</label>
                             <input
-                                type="text"
-                                value={location}
-                                onChange={(e) => setLocation(e.target.value)}
+                                type="number"
+                                value={totalHarga}
+                                onChange={(e) => setTotalHarga(e.target.value)}
                                 required
-                                className="border rounded w-full p-2"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-gray-700">Description</label>
-                            <textarea
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
                                 className="border rounded w-full p-2"
                             />
                         </div>
@@ -100,6 +100,7 @@ const transactions = () => {
                             Update Transaction
                         </button>
                     </form>
+
                 </div>
             </div>
 

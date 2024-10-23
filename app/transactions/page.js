@@ -8,11 +8,12 @@ import Nav from "@components/nav";
 const transactions = () => {
 
     const { alert, showAlert, alertClass } = useAlert();
-    const [name, setName] = useState('');
-    const [location, setLocation] = useState('');
-    const [description, setDescription] = useState('');
+    const [totalHarga, setTotalHarga] = useState('');
+
+    const [selectedCustomer, setSelectedCustomer] = useState('');
 
     const [transaction, setTransaction] = useState([]);
+    const [customer, setCustomer] = useState([]);
 
     const fetchTransaction = async () => {
         const response = await fetch('/api/transactions/get');
@@ -24,7 +25,8 @@ const transactions = () => {
         }
 
         const data = await response.json();
-        setTransaction(data);
+        setTransaction(data.transactions);
+        setCustomer(data.customers);
     };
     useEffect(() => {
 
@@ -39,7 +41,7 @@ const transactions = () => {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ name, location, description }),
+            body: JSON.stringify({ selectedCustomer, totalHarga }),
         });
 
         if (response.ok) {
@@ -67,10 +69,9 @@ const transactions = () => {
 
             const data = await response.json();
             if (response.ok) {
-                showAlert('Data berhasil dihapus!', 'error');
+                showAlert('Data berhasil dihapus!', 'success');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 fetchTransaction();
-                console.log(data.message);
             } else {
                 showAlert(data.message, 'error');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -79,6 +80,47 @@ const transactions = () => {
         }
     };
 
+    const klaimVoucher = async (idCustomer, id) => {
+        const response = await fetch('/api/transactions/claimvoucher', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ idCustomer, id }),
+        });
+
+        if (response.ok) {
+
+            showAlert('Voucher berhasil diklaim!', 'success');
+
+            fetchTransaction();
+        } else {
+            const errorData = await response.json();
+            console.error('Error adding transaction:', errorData.error);
+        }
+    }
+
+    const VoucherBadge = (idCustomer, id, totalHarga, isVoucherClaimed) => {
+        const isEligible = totalHarga >= 1000000;
+
+        return (
+            <div className="flex items-center">
+                <span onClick={() => {
+                    if (!isVoucherClaimed && isEligible) {
+                        const confirmClaim = window.confirm("Apakah Anda yakin ingin mengklaim voucher ini?");
+                        if (confirmClaim) {
+                            klaimVoucher(idCustomer, id);
+                        }
+                    }
+                }}
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${isEligible ? (isVoucherClaimed ? 'bg-green-500 text-white' : 'bg-blue-500 text-white cursor-pointer hover:bg-blue-600') : 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                        }`}
+                >
+                    {isVoucherClaimed ? 'Voucher has been claimed' : (isEligible ? 'Claim Voucher' : 'Not Enough to Claim')}
+                </span>
+            </div>
+        );
+    };
 
     return (
         <Provider>
@@ -93,30 +135,27 @@ const transactions = () => {
                     <h1 className="text-2xl font-bold mb-4">Add New Transaction</h1>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-gray-700">Transaction Name</label>
-                            <input
-                                type="text"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                required
+                            <label className="block text-gray-700">Select Customer</label>
+                            <select
+                                value={selectedCustomer}
+                                onChange={(e) => setSelectedCustomer(e.target.value)}
                                 className="border rounded w-full p-2"
-                            />
+                            >
+                                <option value="">-</option>
+                                {customer.map((e) => (
+                                    <option key={e.id} value={e.id}>
+                                        {e.name}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                         <div>
-                            <label className="block text-gray-700">Location</label>
+                            <label className="block text-gray-700">Total Harga Transaksi</label>
                             <input
-                                type="text"
-                                value={location}
-                                onChange={(e) => setLocation(e.target.value)}
+                                type="number"
+                                value={totalHarga}
+                                onChange={(e) => setTotalHarga(e.target.value)}
                                 required
-                                className="border rounded w-full p-2"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-gray-700">Description</label>
-                            <textarea
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
                                 className="border rounded w-full p-2"
                             />
                         </div>
@@ -130,16 +169,16 @@ const transactions = () => {
                         <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                             <tr>
                                 <th scope="col" className="px-6 py-3">
-                                    Transaction Name
+                                    Customer Name
                                 </th>
                                 <th scope="col" className="px-6 py-3">
-                                    Location
-                                </th>
-                                <th scope="col" className="px-6 py-3">
-                                    Description
+                                    Total Price
                                 </th>
                                 <th scope="col" className="px-6 py-3">
                                     Date
+                                </th>
+                                <th scope="col" className="px-6 py-3">
+                                    Voucher
                                 </th>
                                 <th scope="col" className="px-6 py-3">
                                     Action
@@ -151,21 +190,26 @@ const transactions = () => {
 
                                 <tr key={i} className="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700">
                                     <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                        {p.name}
+                                        {p.customer.name}
                                     </th>
                                     <td className="px-6 py-4">
-                                        {p.location}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        {p.description}
+                                        Rp{p.totalHarga}
                                     </td>
                                     <td className="px-6 py-4">
                                         {new Date(p.createdAt).toLocaleDateString()}
                                     </td>
                                     <td className="px-6 py-4">
-                                        <a href={`/transactions/${p.id}`} className="font-medium text-blue-600 dark:text-blue-500 hover:underline">Edit</a>
-                                        <button type='button' onClick={() => deleteTransaction(p.id)} className="font-medium ms-5 text-red-600 dark:text-red-500 hover:underline">Delete</button>
+                                        {VoucherBadge(p.customer.id, p.id, p.totalHarga, p.tukarVoucher)}
                                     </td>
+                                    <td className="px-6 py-4">
+                                        {!p.tukarVoucher ? (
+                                            <>
+                                                <a href={`/transactions/${p.id}`} className="font-medium text-blue-600 dark:text-blue-500 hover:underline">Edit</a>
+                                                <button type='button' onClick={() => deleteTransaction(p.id)} className="font-medium ms-5 text-red-600 dark:text-red-500 hover:underline">Delete</button>
+                                            </>
+                                        ) : null}
+                                    </td>
+
                                 </tr>
                             ))}
 

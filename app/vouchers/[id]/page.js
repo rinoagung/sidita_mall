@@ -25,7 +25,6 @@ const vouchers = () => {
                 const response = await fetch(`/api/vouchers/${id}`);
                 if (response.ok) {
                     const data = await response.json();
-                    console.log(data)
                     setSelectedCustomer(data.vouchers.customerId)
                     setSelectedTransaction(data.vouchers.transactionId)
                     setHours(data.vouchers.hours)

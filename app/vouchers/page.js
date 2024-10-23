@@ -4,79 +4,66 @@ import useAlert from '@components/alert';
 import { useEffect, useState } from 'react';
 import Provider from "@components/provider";
 import Nav from "@components/nav";
-import { useRouter } from 'next/navigation';
 
 
 const vouchers = () => {
     const { alert, showAlert, alertClass } = useAlert();
 
-    const [customer, setCustomer] = useState([]);
-    const [transaction, setTransaction] = useState([]);
     const [vouchers, setVouchers] = useState([]);
+    const [searchCode, setSearchCode] = useState([]);
 
-    const [hours, setHours] = useState('');
-    const [selectedCustomer, setSelectedCustomer] = useState('');
-    const [selectedTransaction, setSelectedTransaction] = useState('');
-    const router = useRouter();
 
     const fetchvouchers = async () => {
-        const response = await fetch('/api/vouchers/get');
+        const response = await fetch(`/api/vouchers/get?searchCode=${searchCode}`);
         if (!response.ok) {
             console.error('Error fetching data:', response.statusText);
             return;
         }
         const data = await response.json();
-        console.log(data)
-        setVouchers(data.vouchers || []);
-        setCustomer(data.customers || []);
-        setTransaction(data.transactions || []);
+        setVouchers(data || []);
     };
     useEffect(() => {
 
         fetchvouchers();
     }, []);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        const response = await fetch('/api/vouchers/new', {
-            method: 'POST',
+    const pakaiVoucher = async (id) => {
+        const response = await fetch('/api/vouchers/pakaivoucher', {
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ selectedCustomer, hours, selectedTransaction }),
+            body: JSON.stringify(id),
         });
 
         if (response.ok) {
 
-            showAlert('Data berhasil ditambahkan!', 'success');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            fetchvouchers()
+            showAlert('Voucher berhasil diklaim!', 'success');
+
+            fetchvouchers();
         } else {
             const errorData = await response.json();
-            console.error('Error adding transaction:', errorData.error);
+            console.error('Error using voucher:', errorData.error);
         }
-    };
+    }
 
-    const deleteVouchers = async (id) => {
-        const confirmed = window.confirm("Apakah Anda yakin ingin menghapus data ini?");
-        if (confirmed) {
-            const response = await fetch(`/api/vouchers/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ id }),
-            });
-
-            const data = await response.json();
-            if (response.ok) {
-                fetchvouchers()
-                console.log(data.message);
-            } else {
-                console.error('Error deleting customer:', data);
-            }
-        }
+    const VoucherBadge = (id, used) => {
+        return (
+            <div className="flex items-center">
+                <span onClick={() => {
+                    if (!used) {
+                        const confirmClaim = window.confirm("Gunakan voucher?");
+                        if (confirmClaim) {
+                            pakaiVoucher(id);
+                        }
+                    }
+                }}
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${used ? 'bg-green-500 text-white' : 'bg-blue-500 text-white cursor-pointer hover:bg-blue-600'}`}
+                >
+                    {!used ? 'Use' : 'Voucher has been used'}
+                </span>
+            </div>
+        );
     };
 
     return (
@@ -88,54 +75,17 @@ const vouchers = () => {
                         {alert.message}
                     </div>
                 )}
-                <div className="container mx-auto p-4">
-                    <h1 className="text-2xl font-bold mb-4">Add New Vouchers</h1>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-gray-700">Select Customer</label>
-                            <select
-                                value={selectedCustomer}
-                                onChange={(e) => setSelectedCustomer(e.target.value)}
-                                className="border rounded w-full p-2"
-                            >
-                                <option value="">-</option>
-                                {customer.map((e) => (
-                                    <option key={e.id} value={e.id}>
-                                        {e.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700">Select Transaction</label>
-                            <select
-                                value={selectedTransaction}
-                                onChange={(e) => setSelectedTransaction(e.target.value)}
-                                className="border rounded w-full p-2"
-                            >
-                                <option value="">-</option>
-                                {transaction.map((p) => (
-                                    <option key={p.id} value={p.id}>
-                                        {p.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-gray-700">Total Hours</label>
-                            <input
-                                type="number"
-                                value={hours}
-                                onChange={(e) => setHours(e.target.value)}
-                                required
-                                className="border rounded w-full p-2"
-                            />
-                        </div>
-                        <button type="submit" className="bg-blue-500 text-white rounded p-2">
-                            Add Vouchers
-                        </button>
-                    </form>
+                <div className='mb-10'>
+                    <input
+                        type="text"
+                        value={searchCode}
+                        onChange={(e) => setSearchCode(e.target.value)}
+                        placeholder="Insert voucher code"
+                        className="border p-2 rounded"
+                    />
+                    <button onClick={fetchvouchers} className="ml-2 bg-blue-500 text-white p-2 rounded">
+                        Search voucher
+                    </button>
                 </div>
                 <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
                     <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
@@ -145,14 +95,10 @@ const vouchers = () => {
                                     Customer
                                 </th>
                                 <th scope="col" className="px-6 py-3">
-                                    Transaction
+                                    Email
                                 </th>
                                 <th scope="col" className="px-6 py-3">
-                                    Duration
-                                </th>
-                                <th scope="col" className="px-6 py-3">
-                                    8 hours of daily <br />
-                                    transaction time
+                                    Code
                                 </th>
                                 <th scope="col" className="px-6 py-3">
                                     Date
@@ -166,23 +112,19 @@ const vouchers = () => {
                             {vouchers.map((entry, i) => (
                                 <tr key={i} className="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700">
                                     <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                        {entry.customers.name}
+                                        {entry.customer.name}
                                     </th>
                                     <td className="px-6 py-4">
-                                        {entry.transaction.name}
+                                        {entry.customer.email}
                                     </td>
                                     <td className="px-6 py-4">
-                                        {entry.hours} jam
+                                        {entry.code}
                                     </td>
                                     <td className="px-6 py-4">
-                                        {entry.dayValue}
+                                        {new Date(entry.createdAt).toLocaleDateString()}
                                     </td>
                                     <td className="px-6 py-4">
-                                        {new Date(entry.date).toLocaleDateString()}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <a href={`/hours/${entry.id}`} className="font-medium text-blue-600 dark:text-blue-500 hover:underline">Edit</a>
-                                        <button type='button' onClick={() => deleteVouchers(p.id)} className="font-medium ms-5 text-red-600 dark:text-red-500 hover:underline">Delete</button>
+                                        {VoucherBadge(entry.id, entry.used)}
 
                                     </td>
                                 </tr>

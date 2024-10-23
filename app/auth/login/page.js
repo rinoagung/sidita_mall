@@ -16,7 +16,7 @@ export default function LoginPage() {
         });
 
         if (res && !res.error) {
-            router.push("/dashboard");
+            router.push("/customers");
         } else {
             console.error("Login failed");
         }

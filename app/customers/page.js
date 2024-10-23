@@ -65,7 +65,6 @@ const customers = () => {
             if (response.ok) {
                 showAlert('Data berhasil dihapus!', 'success');
                 fetchCustomer();
-                console.log(data.message);
             } else {
                 showAlert(data.message, 'error');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
