@@ -47,20 +47,23 @@ const vouchers = () => {
         }
     }
 
-    const VoucherBadge = (id, used) => {
+    const VoucherBadge = ({ id, used, expiredDate }) => {
+        const isExpired = new Date(expiredDate) < new Date();
+
         return (
             <div className="flex items-center">
-                <span onClick={() => {
-                    if (!used) {
-                        const confirmClaim = window.confirm("Gunakan voucher?");
-                        if (confirmClaim) {
-                            pakaiVoucher(id);
+                <span
+                    onClick={() => {
+                        if (!used && !isExpired) {
+                            const confirmClaim = window.confirm("Gunakan voucher?");
+                            if (confirmClaim) {
+                                pakaiVoucher(id);
+                            }
                         }
-                    }
-                }}
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${used ? 'bg-green-500 text-white' : 'bg-blue-500 text-white cursor-pointer hover:bg-blue-600'}`}
+                    }}
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${used ? 'bg-green-500 text-white' : isExpired ? 'bg-gray-500 text-white cursor-not-allowed' : 'bg-blue-500 text-white cursor-pointer hover:bg-blue-600'}`}
                 >
-                    {!used ? 'Use' : 'Voucher has been used'}
+                    {used ? 'Voucher has been used' : isExpired ? 'Voucher expired' : 'Use'}
                 </span>
             </div>
         );
@@ -124,7 +127,7 @@ const vouchers = () => {
                                         {new Date(entry.createdAt).toLocaleDateString()}
                                     </td>
                                     <td className="px-6 py-4">
-                                        {VoucherBadge(entry.id, entry.used)}
+                                        {VoucherBadge(entry.id, entry.used, entry.expiresAt)}
 
                                     </td>
                                 </tr>
